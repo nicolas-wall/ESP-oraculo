@@ -5,6 +5,14 @@ Un aparatito de escritorio con estética de aventura clásica. Usa una **XIAO ES
 - **Oráculo:** es lo que muestra siempre. Una esfera brilla entre dos fuegos. Le hacés una pregunta en voz alta y lo agitás: la esfera tiembla, aparece el sabio y te da un consejo letra por letra. Hay respuestas tipo bola 8, profecías y consejos absurdos.
 - **Mazmorra:** mantené apretado **OK** para entrar, y otra vez para volver al oráculo. Es un juego por turnos visto desde arriba: buscá el cofre con la llave, abrí la escalera y bajá al piso siguiente. Cada piso es distinto y cada vez más difícil.
 
+## Cómo se ve
+
+Capturas generadas con el mismo código corriendo en la PC:
+
+![Oráculo](docs/hoja_oraculo.png)
+
+![Mazmorra](docs/hoja_mazmorra.png)
+
 ## Controles
 
 **Siempre**
