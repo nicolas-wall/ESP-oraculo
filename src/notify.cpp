@@ -385,13 +385,14 @@ void notifyDraw(uint32_t now) {
   }
 }
 
-// Sobrecito con la cantidad sin leer (esquina de arriba a la derecha).
+// Sobrecito con la cantidad sin leer (abajo a la izquierda, arriba del
+// texto de ayuda, para no tapar la respuesta del oráculo).
 void notifyDrawBadge(uint32_t now) {
   int u = unreadCount();
   if (u > 0) {
-    int x = 112, y = 1;
+    int x = 2, y = 45;
     u8g2.setDrawColor(0);
-    u8g2.drawBox(x - 8, y - 1, 24, 10);
+    u8g2.drawBox(x - 1, y - 1, 22, 10);
     u8g2.setDrawColor(1);
     u8g2.drawFrame(x, y, 11, 8);
     u8g2.drawLine(x, y, x + 5, y + 4);
@@ -399,7 +400,7 @@ void notifyDrawBadge(uint32_t now) {
     u8g2.setFont(u8g2_font_4x6_tf);
     char b[4];
     snprintf(b, sizeof(b), "%d", u);
-    u8g2.drawStr(x - 2 - u8g2.getStrWidth(b), y + 7, b);
+    u8g2.drawStr(x + 13, y + 7, b);
   }
   (void)now;
 }
