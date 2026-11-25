@@ -777,7 +777,8 @@ void drawEffects(uint32_t now) {
   }
   if (itemSprite && now - itemAt < 1200) {
     int rise = min((int)(now - itemAt) / 60, 8);
-    drawSprite(itemX * TS, OY + itemY * TS - rise, itemSprite, 8);
+    int iy = max(OY + itemY * TS - rise, OY);  // sin tapar el HUD
+    drawSprite(itemX * TS, iy, itemSprite, 8);
   }
 }
 
@@ -810,8 +811,8 @@ void drawMap(uint32_t now) {
 
 void drawTitle(uint32_t now) {
   u8g2.drawFrame(0, 0, 128, 64);
-  u8g2.setFont(u8g2_font_ncenB14_tf);
-  centerText(22, "MAZMORRA");
+  u8g2.setFont(u8g2_font_ncenB12_tf);
+  centerText(21, "MAZMORRA");
   // héroe y un blob que se miran
   drawSprite(46, 30, S_HERO_E, 8);
   drawSprite(74, 30, S_SLIME[(now / 300) % 2], 8);
@@ -820,7 +821,7 @@ void drawTitle(uint32_t now) {
   if ((now / 500) % 2) centerText(50, "OK PARA ENTRAR");
   if (bestFloor > 0) {
     char buf[32];
-    snprintf(buf, sizeof(buf), "Récord: piso %d, %d rupias", bestFloor, bestRupees);
+    snprintf(buf, sizeof(buf), "Récord: piso %d", bestFloor);
     centerText(60, buf);
   }
 }
@@ -832,8 +833,8 @@ void drawIntro(uint32_t now) {
   snprintf(buf, sizeof(buf), "PISO %d", floorN);
   centerText(30, buf);
   // escalones que bajan
-  int steps = min((int)(t / 120), 6);
-  for (int i = 0; i < steps; i++) u8g2.drawBox(40 + i * 8, 40 + i * 3, 8, 2);
+  int steps = min((int)(t / 120), 5);
+  for (int i = 0; i < steps; i++) u8g2.drawBox(44 + i * 8, 36 + i * 3, 8, 2);
   u8g2.setFont(u8g2_font_5x7_tf);
   if (floorN == 1) centerText(62, "Buscá la llave y bajá");
 }
@@ -936,5 +937,6 @@ void dungeonDraw(uint32_t now) {
     if (en[i].alive) drawEnemy(en[i], now);
   drawPlayer(now);
   drawEffects(now);
-  if ((int32_t)(toastUntil - now) > 0) drawToast(toast.c_str());
+  // el cartel va del lado de la sala donde no está el héroe
+  if ((int32_t)(toastUntil - now) > 0) drawToast(toast.c_str(), py <= 3 ? 47 : 11);
 }

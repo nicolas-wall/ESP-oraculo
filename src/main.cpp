@@ -101,6 +101,7 @@ static void drawBanner() {
   u8g2.drawFrame(2, 2, 124, 60);
   u8g2.drawFrame(5, 5, 118, 54);
   u8g2.setFont(u8g2_font_ncenB14_tf);
+  if (u8g2.getUTF8Width(bannerText) > 108) u8g2.setFont(u8g2_font_ncenB12_tf);
   centerText(39, bannerText);
 }
 

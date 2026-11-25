@@ -64,6 +64,7 @@ OState ost = O_IDLE;
 uint32_t ostAt = 0, lastAct = 0;
 TypeBox box;
 int lastTyped = 0, lastPhrase = -1;
+bool swallowRelease = false;  // el botón que despierta la pantalla no pregunta
 
 const uint32_t SHAKE_MS = 1500;      // cuánto "piensa"
 const uint32_t TYPE_DELAY = 900;     // espera antes de escribir (deja sonar el acorde)
@@ -127,6 +128,10 @@ void oracleUpdate(uint32_t now) {
   bool anyBtn = btnL.shortRel || btnOk.shortRel || btnR.shortRel || comboFired;
   bool anyPress = btnL.press || btnOk.press || btnR.press;
   if (anyPress || shakeFired) lastAct = now;
+  if (swallowRelease && anyBtn) {
+    swallowRelease = false;
+    anyBtn = false;
+  }
 
   switch (ost) {
     case O_SLEEP:
@@ -134,6 +139,7 @@ void oracleUpdate(uint32_t now) {
         u8g2.setContrast(255);
         ost = O_IDLE;
         ostAt = now;
+        swallowRelease = anyPress;
         if (shakeFired) ask(now);
       }
       break;
@@ -196,7 +202,7 @@ void oracleDraw(uint32_t now) {
       drawFlames(12, 107, 30, now, false);
       drawOrb(64, 24, 16, now, 1.2f, (now / 700) % 2);
       drawPedestal(64, 41);
-      u8g2.setFont(u8g2_font_5x7_tf);
+      u8g2.setFont(u8g2_font_6x10_tf);
       centerText(63, TILT_ENABLED ? "AGITÁ Y PREGUNTÁ" : "PREGUNTÁ Y APRETÁ");
       break;
     }
@@ -212,11 +218,11 @@ void oracleDraw(uint32_t now) {
         float rr = 18 + (st / 15 + k * 7) % 20;
         drawSparkle(64 + (int)(cosf(ang) * rr), 24 + (int)(sinf(ang) * rr * 0.6f), 1 + (k + st / 90) % 2);
       }
-      u8g2.setFont(u8g2_font_5x7_tf);
+      u8g2.setFont(u8g2_font_6x10_tf);
       int dots = (st / 300) % 4;
-      char buf[24] = "EL ORÁCULO PIENSA";
+      char buf[28] = "EL ORÁCULO PIENSA";
       for (int i = 0; i < dots; i++) strcat(buf, ".");
-      u8g2.drawUTF8(20, 63, buf);
+      u8g2.drawUTF8(13, 63, buf);
       break;
     }
     case O_REVEAL:
@@ -227,7 +233,7 @@ void oracleDraw(uint32_t now) {
       if (pct >= 100) drawSprite(58, 34, SPR_SAGE, 16);
       else drawSpriteDissolve(58, 34, SPR_SAGE, 16, pct);
       if (ost == O_DONE && (now / 600) % 2 == 0) {
-        u8g2.setFont(u8g2_font_5x7_tf);
+        u8g2.setFont(u8g2_font_6x10_tf);
         centerText(63, TILT_ENABLED ? "AGITÁ DE NUEVO" : "APRETÁ DE NUEVO");
       }
       break;

@@ -39,11 +39,11 @@ void drawSparkle(int x, int y, int size) {
 }
 
 // Cartelito centrado sobre lo que haya en pantalla.
-void drawToast(const char* msg) {
+void drawToast(const char* msg, int y) {
   u8g2.setFont(u8g2_font_6x10_tf);
   int w = u8g2.getUTF8Width(msg) + 10, h = 15;
   if (w > 128) w = 128;
-  int x = (128 - w) / 2, y = 26;
+  int x = (128 - w) / 2;
   u8g2.setDrawColor(0);
   u8g2.drawBox(x, y, w, h);
   u8g2.setDrawColor(1);

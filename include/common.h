@@ -57,7 +57,7 @@ void drawSpriteMirror(int x, int y, const char* const* rows, int h);
 void drawSpriteDissolve(int x, int y, const char* const* rows, int h, int percent);
 void centerText(int y, const char* s);
 void drawSparkle(int x, int y, int size);
-void drawToast(const char* msg);
+void drawToast(const char* msg, int y = 26);
 std::vector<String> wrapText(const String& text, int width);
 String upperUtf8(const String& s);
 
