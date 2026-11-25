@@ -1,5 +1,5 @@
 // Oráculo y Mazmorra
-// XIAO ESP32-S3 + OLED 128x64 I2C + buzzer pasivo + 3 botones + sensor de inclinación
+// XIAO ESP32-S3 + OLED 128x64 I2C + buzzer pasivo + 3 botones + acelerómetro MPU-6050
 //
 // Siempre arranca en el oráculo: lo agitás y te da un consejo.
 // Mantener OK cambia a la mazmorra (y vuelve).
@@ -31,31 +31,6 @@ static Mode mode = M_ORACLE;
 static uint32_t bannerUntil = 0;
 static const char* bannerText = "";
 static uint32_t muteToastUntil = 0;
-
-// ---------- Sensor de inclinación ----------
-#if TILT_ENABLED
-static bool tiltState = false;
-static uint32_t tiltChanged = 0, lastShake = 0;
-static uint32_t tiltEdges[8];
-static int tiltHead = 0;
-
-static void pollTilt(uint32_t now) {
-  bool raw = digitalRead(PIN_TILT) == LOW;
-  if (raw == tiltState || now - tiltChanged < 8) return;
-  tiltState = raw;
-  tiltChanged = now;
-  tiltEdges[tiltHead] = now;
-  tiltHead = (tiltHead + 1) % 8;
-  int recent = 0;
-  for (int i = 0; i < 8; i++)
-    if (tiltEdges[i] && now - tiltEdges[i] < TILT_WINDOW_MS) recent++;
-  if (recent >= TILT_EDGES && now - lastShake > 1500) {
-    shakeFired = true;
-    lastShake = now;
-    memset(tiltEdges, 0, sizeof(tiltEdges));
-  }
-}
-#endif
 
 // ---------- Izquierda + derecha juntos ----------
 static void pollCombo() {
@@ -134,9 +109,6 @@ void setup() {
   btnL.begin();
   btnOk.begin();
   btnR.begin();
-#if TILT_ENABLED
-  pinMode(PIN_TILT, INPUT_PULLUP);
-#endif
   music.begin(PIN_BUZZER);
   prefs.begin("oraculo", false);
   music.setMuted(prefs.getBool("muted", false));
@@ -145,6 +117,8 @@ void setup() {
   u8g2.setBusClock(400000);
   u8g2.begin();
   u8g2.setFontMode(1);
+  motionBegin();
+  notifyBegin();
 
   dungeonBegin();
   uint32_t now = millis();
@@ -160,9 +134,8 @@ void loop() {
   btnR.poll(now);
   pollCombo();
   shakeFired = false;
-#if TILT_ENABLED
-  pollTilt(now);
-#endif
+  motionPoll(now);
+  bool notif = notifyUpdate(now);  // una carta abierta se queda con los botones
 
   // Mantener izquierda = silenciar / activar el sonido (se guarda)
   if (btnL.longPress) {
@@ -171,19 +144,31 @@ void loop() {
     muteToastUntil = now + 1200;
   }
   // Mantener OK = cambiar entre oráculo y mazmorra
-  if (btnOk.longPress) switchMode(now);
+  if (btnOk.longPress && !notif) switchMode(now);
+  // Mantener derecha en el oráculo = releer las notificaciones
+  if (btnR.longPress && !notif && mode == M_ORACLE) notif = notifyOpenHistory(now);
 
   bool banner = (int32_t)(bannerUntil - now) > 0;
-  if (!banner) {
+  if (!banner && !notif) {
     if (mode == M_ORACLE) oracleUpdate(now);
     else dungeonUpdate(now);
   }
 
   now = millis();
   u8g2.clearBuffer();
-  if (banner) drawBanner();
-  else if (mode == M_ORACLE) oracleDraw(now);
-  else dungeonDraw(now);
+  if (notifyActive()) {
+    notifyDraw(now);
+  } else if (banner) {
+    drawBanner();
+  } else if (mode == M_ORACLE) {
+    oracleDraw(now);
+    notifyDrawBadge(now);
+#if SHAKE_DEBUG
+    motionDrawDebug(now);
+#endif
+  } else {
+    dungeonDraw(now);
+  }
   if ((int32_t)(muteToastUntil - now) > 0) drawMuteToast();
   u8g2.sendBuffer();
 }

@@ -124,6 +124,15 @@ void oracleEnter(uint32_t now) {
   u8g2.setContrast(255);
 }
 
+void oracleWake(uint32_t now) {
+  lastAct = now;
+  u8g2.setContrast(255);
+  if (ost == O_SLEEP) {
+    ost = O_IDLE;
+    ostAt = now;
+  }
+}
+
 void oracleUpdate(uint32_t now) {
   bool anyBtn = btnL.shortRel || btnOk.shortRel || btnR.shortRel || comboFired;
   bool anyPress = btnL.press || btnOk.press || btnR.press;
@@ -203,7 +212,7 @@ void oracleDraw(uint32_t now) {
       drawOrb(64, 24, 16, now, 1.2f, (now / 700) % 2);
       drawPedestal(64, 41);
       u8g2.setFont(u8g2_font_6x10_tf);
-      centerText(63, TILT_ENABLED ? "AGITÁ Y PREGUNTÁ" : "PREGUNTÁ Y APRETÁ");
+      centerText(63, motionReady ? "AGITÁ Y PREGUNTÁ" : "PREGUNTÁ Y APRETÁ");
       break;
     }
     case O_SHAKE: {
@@ -234,7 +243,7 @@ void oracleDraw(uint32_t now) {
       else drawSpriteDissolve(58, 34, SPR_SAGE, 16, pct);
       if (ost == O_DONE && (now / 600) % 2 == 0) {
         u8g2.setFont(u8g2_font_6x10_tf);
-        centerText(63, TILT_ENABLED ? "AGITÁ DE NUEVO" : "APRETÁ DE NUEVO");
+        centerText(63, motionReady ? "AGITÁ DE NUEVO" : "APRETÁ DE NUEVO");
       }
       break;
     }

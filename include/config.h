@@ -4,13 +4,14 @@
 //  ORÁCULO
 // =====================================================================
 
-// Sensor de inclinación / sacudida: 1 = conectado, 0 = todavía no.
-// Sin sensor, cualquier botón le hace la pregunta al oráculo.
-#define TILT_ENABLED    0
-#define PIN_TILT        D1     // la otra pata va a GND
-// Cuántos cambios del sensor en menos de TILT_WINDOW_MS cuentan como "sacudida"
-#define TILT_EDGES      4
-#define TILT_WINDOW_MS  800
+// Acelerómetro MPU-6050 (mismo I2C que la pantalla). Si no lo encuentra,
+// cualquier botón le hace la pregunta al oráculo.
+// Una sacudida = SHAKE_PEAKS golpes de más de SHAKE_G (en g) dentro de SHAKE_WINDOW_MS.
+// Más alto = hay que agitar más fuerte.
+#define SHAKE_G          0.6f
+#define SHAKE_PEAKS      3
+#define SHAKE_WINDOW_MS  900
+#define SHAKE_DEBUG      0     // 1 = muestra las lecturas del sensor arriba de la pantalla
 
 // Sin tocar nada por este tiempo, la pantalla se apaga casi del todo (ms)
 #define SLEEP_AFTER_MS  120000

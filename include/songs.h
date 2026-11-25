@@ -66,3 +66,10 @@ SONG(SONG_GAMEOVER, 140, {g4,3},{fs4,3},{f4,3},{e4,8})
 
 // ------------------------------ General ------------------------------
 SONG(SONG_MODE, 50, {g5,1},{b5,1},{d6,2})
+
+// ------------------------------ Mensajes ------------------------------
+// Llega el hada con una carta: campanitas que suben y bajan
+SONG(SONG_LETTER, 55, {e6,1},{b5,1},{g6,1},{e6,1},{b5,1},{e6,3})
+// Llamada entrante (se repite mientras suena)
+SONG(SONG_CALL, 60, {a5,1},{e6,1},{a5,1},{e6,1},{r,1},{a5,1},{e6,1},{a5,1},{e6,1},{r,8})
+SONG(SONG_PAGE, 20, {g5,1},{c6,1})

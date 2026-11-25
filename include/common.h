@@ -47,7 +47,11 @@ struct Button {
 
 extern Button btnL, btnOk, btnR;
 extern bool comboFired;  // izquierda + derecha apretados juntos (al soltarlos)
-extern bool shakeFired;  // sacudida del sensor de inclinación
+extern bool shakeFired;   // sacudida detectada por el acelerómetro
+extern bool motionReady;  // el MPU-6050 respondió al arrancar
+void motionBegin();
+void motionPoll(uint32_t now);
+void motionDrawDebug(uint32_t now);
 
 // ---------------------------------------------------------------------------
 // Dibujo
@@ -137,6 +141,16 @@ struct TypeBox {
 void oracleEnter(uint32_t now);
 void oracleUpdate(uint32_t now);
 void oracleDraw(uint32_t now);
+void oracleWake(uint32_t now);  // prende la pantalla si estaba dormida
+
+// Notificaciones del teléfono (encima de cualquier modo)
+void notifyBegin();
+bool notifyUpdate(uint32_t now);  // true = se quedó con los botones
+void notifyDraw(uint32_t now);
+void notifyDrawBadge(uint32_t now);
+bool notifyActive();
+bool notifyConnected();
+bool notifyOpenHistory(uint32_t now);
 
 void dungeonBegin();
 void dungeonEnter(uint32_t now);
