@@ -99,8 +99,15 @@ static void drawMuteToast() {
   u8g2.setDrawColor(1);
   u8g2.drawRFrame(x, y, w, h, 3);
   drawSpeaker(x + 6, y + 7, music.muted());
+  static const char* const NAMES[] = {"Silencio", "Bajo", "Medio", "Alto"};
   u8g2.setFont(u8g2_font_6x10_tf);
-  u8g2.drawUTF8(x + 28, y + 16, music.muted() ? "Silencio" : "Sonido");
+  u8g2.drawUTF8(x + 28, y + 12, NAMES[music.volume()]);
+  // barritas de volumen
+  for (int i = 0; i < MusicPlayer::VOL_MAX; i++) {
+    int bx = x + 28 + i * 8, bh = 2 + i * 2;
+    if (i < music.volume()) u8g2.drawBox(bx, y + 20 - bh, 6, bh);
+    else u8g2.drawFrame(bx, y + 20 - bh, 6, bh);
+  }
 }
 
 void setup() {
@@ -111,7 +118,7 @@ void setup() {
   btnR.begin();
   music.begin(PIN_BUZZER);
   prefs.begin("oraculo", false);
-  music.setMuted(prefs.getBool("muted", false));
+  music.setVolume(prefs.getUChar("vol", prefs.getBool("muted", false) ? 0 : MusicPlayer::VOL_MAX));
   randomSeed(esp_random());
 
   u8g2.setBusClock(400000);
@@ -137,10 +144,13 @@ void loop() {
   motionPoll(now);
   bool notif = notifyUpdate(now);  // una carta abierta se queda con los botones
 
-  // Mantener izquierda = silenciar / activar el sonido (se guarda)
+  // Mantener izquierda = cambiar el volumen (se guarda)
   if (btnL.longPress) {
-    music.setMuted(!music.muted());
-    prefs.putBool("muted", music.muted());
+    // alto -> medio -> bajo -> silencio -> alto
+    uint8_t v = music.volume();
+    music.setVolume(v == 0 ? MusicPlayer::VOL_MAX : v - 1);
+    prefs.putUChar("vol", music.volume());
+    if (!music.muted()) music.play(&SONG_BLIP);  // para escuchar cómo quedó
     muteToastUntil = now + 1200;
   }
   // Mantener OK = cambiar entre oráculo y mazmorra

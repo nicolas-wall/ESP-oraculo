@@ -21,7 +21,7 @@ Capturas generadas con el mismo código corriendo en la PC:
 | Acción | Botón |
 |---|---|
 | Cambiar entre oráculo y mazmorra | mantener **OK** |
-| Silenciar o activar el sonido | mantener **izquierda** |
+| Volumen: alto → medio → bajo → silencio | mantener **izquierda** (cada vez baja un nivel) |
 
 **Oráculo:** agitalo. Sin sensor, cualquier botón le hace la pregunta. Después de 2 minutos sin uso, la pantalla se apaga casi del todo. Mantené **derecha** para releer las notificaciones; el sobrecito de arriba a la derecha cuenta las que no leíste.
 

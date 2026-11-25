@@ -12,8 +12,9 @@ class MusicPlayer {
  public:
   void begin(uint8_t pin) {
     pin_ = pin;
-    pinMode(pin_, OUTPUT);
-    digitalWrite(pin_, LOW);
+    ledcSetup(CH, 2000, 10);
+    ledcAttachPin(pin_, CH);
+    ledcWrite(CH, 0);
     xTaskCreatePinnedToCore(taskFn, "music", 4096, this, 2, nullptr, 0);
   }
 
@@ -25,11 +26,15 @@ class MusicPlayer {
   }
   void stop() { play(nullptr); }
 
-  void setMuted(bool m) {
-    muted_ = m;
+  // Volumen 0 (silencio) a 3 (alto). El buzzer suena más bajo cuanto más
+  // corto es el pulso que le mandamos.
+  static const uint8_t VOL_MAX = 3;
+  void setVolume(uint8_t v) {
+    vol_ = v > VOL_MAX ? VOL_MAX : v;
     muteChanged_ = true;
   }
-  bool muted() const { return muted_; }
+  uint8_t volume() const { return vol_; }
+  bool muted() const { return vol_ == 0; }
   bool playing() const { return reqFlag_ || cur_ != nullptr; }
 
  private:
@@ -41,8 +46,14 @@ class MusicPlayer {
     }
   }
 
+  static const uint8_t CH = 4;  // canal PWM del buzzer
+  uint16_t duty() const {
+    static const uint16_t D[] = {0, 10, 60, 512};  // de 1023
+    return D[vol_];
+  }
+
   void silence() {
-    if (toneOn_) noTone(pin_);
+    if (toneOn_) ledcWrite(CH, 0);
     toneOn_ = false;
     sounding_ = false;
   }
@@ -60,10 +71,7 @@ class MusicPlayer {
     uint32_t now = millis();
     if (muteChanged_) {
       muteChanged_ = false;
-      if (muted_ && toneOn_) {
-        noTone(pin_);
-        toneOn_ = false;
-      }
+      if (toneOn_) ledcWrite(CH, duty());  // aplica el volumen nuevo al instante
     }
     if (reqFlag_) {
       reqFlag_ = false;
@@ -88,8 +96,9 @@ class MusicPlayer {
     noteEnd_ += dur;
     if (n.midi) {
       uint32_t gap = dur > 80 ? 18 : (dur > 20 ? 4 : 0);
-      if (!muted_) {
-        tone(pin_, midiToFreq(n.midi));
+      if (vol_) {
+        ledcChangeFrequency(CH, midiToFreq(n.midi), 10);
+        ledcWrite(CH, duty());
         toneOn_ = true;
       }
       sounding_ = true;
@@ -107,7 +116,8 @@ class MusicPlayer {
   const Song* next_ = nullptr;
   uint32_t noteEnd_ = 0, soundEnd_ = 0;
   uint16_t idx_ = 0;
-  volatile bool muted_ = false, muteChanged_ = false;
+  volatile uint8_t vol_ = VOL_MAX;
+  volatile bool muteChanged_ = false;
   bool toneOn_ = false;
   volatile bool sounding_ = false;
 };
