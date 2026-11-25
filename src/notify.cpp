@@ -127,7 +127,8 @@ int oldestUnread() {
   return -1;
 }
 
-void openMsg(int i, uint32_t now) {
+void openMsg(int i, uint32_t now, const Song* sound = &SONG_PAGE) {
+  if (sound) music.play(sound);
   cur = i;
   hist[i].seen = true;
   String body = hist[i].text[0] ? hist[i].text : "(sin texto)";
@@ -149,6 +150,7 @@ void arrive(uint32_t now) {
 }
 
 void close(uint32_t now) {
+  if (nst == N_READ) music.play(&SONG_LETTER_CLOSE);
   nst = N_NONE;
   newWhileOpen = false;
   oracleWake(now);
@@ -265,7 +267,7 @@ bool notifyUpdate(uint32_t now) {
       if (now - nAt > ARRIVE_MS || ok) {
         int i = oldestUnread();
         if (i < 0) close(now);
-        else openMsg(i, now);
+        else openMsg(i, now, &SONG_LETTER_OPEN);
       }
       return true;
 
@@ -275,17 +277,14 @@ bool notifyUpdate(uint32_t now) {
         if (box.ok()) {
           int i = oldestUnread();
           if (i >= 0) {
-            music.play(&SONG_PAGE);
-            openMsg(i, now);
+            openMsg(i, now, &SONG_LETTER_OPEN);
           } else {
             close(now);
           }
         }
       } else if (left && cur + 1 < histCount) {
-        music.play(&SONG_PAGE);
         openMsg(cur + 1, now);  // más vieja
       } else if (right && cur > 0) {
-        music.play(&SONG_PAGE);
         openMsg(cur - 1, now);  // más nueva
       } else if (now - lastInput > READ_TIMEOUT) {
         close(now);
@@ -307,9 +306,8 @@ bool notifyUpdate(uint32_t now) {
 bool notifyOpenHistory(uint32_t now) {
   if (!histCount || nst != N_NONE) return false;
   u8g2.setContrast(255);
-  music.play(&SONG_PAGE);
   int i = oldestUnread();
-  openMsg(i >= 0 ? i : 0, now);
+  openMsg(i >= 0 ? i : 0, now, &SONG_LETTER_OPEN);
   return true;
 }
 
