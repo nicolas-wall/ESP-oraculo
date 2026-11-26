@@ -4,6 +4,7 @@ Un aparatito de escritorio con estética de aventura clásica. Usa una **XIAO ES
 
 - **Oráculo:** es lo que muestra siempre. Una esfera brilla entre dos fuegos. Le hacés una pregunta en voz alta y lo agitás: la esfera tiembla, aparece el sabio y te da un consejo letra por letra. Hay respuestas tipo bola 8, profecías y consejos absurdos.
 - **Cartas:** cuando te llega una notificación al teléfono, un hada mensajera cruza la pantalla con una carta y se abre un pergamino con quién te escribe y el mensaje. Funciona encima del oráculo y del juego.
+- **Brújula:** si navegás con Google Maps, la flecha de la próxima vuelta aparece en la pantalla con la distancia, la calle y la hora de llegada.
 - **Mazmorra:** mantené apretado **OK** para entrar, y otra vez para volver al oráculo. Es un juego por turnos visto desde arriba: buscá el cofre con la llave, abrí la escalera y bajá al piso siguiente. Cada piso es distinto y cada vez más difícil.
 
 ## Cómo se ve
@@ -23,7 +24,7 @@ Capturas generadas con el mismo código corriendo en la PC:
 | Cambiar entre oráculo y mazmorra | mantener **OK** |
 | Volumen: alto → medio → bajo → silencio | mantener **izquierda** (cada vez baja un nivel) |
 
-**Oráculo:** agitalo. Sin sensor, cualquier botón le hace la pregunta. Después de 2 minutos sin uso, la pantalla se apaga casi del todo. Mantené **derecha** para releer las notificaciones; el sobrecito de arriba a la derecha cuenta las que no leíste.
+**Oráculo:** agitalo. Sin sensor, cualquier botón le hace la pregunta. Después de 2 minutos sin uso, la pantalla se apaga casi del todo. Mantené **derecha** para releer las notificaciones; el sobrecito de abajo a la izquierda cuenta las que no leíste.
 
 **Cartas (notificaciones)**
 
@@ -32,6 +33,8 @@ Capturas generadas con el mismo código corriendo en la PC:
 | Avanzar el texto / cerrar la carta | **OK** |
 | Notificación más vieja / más nueva | **izquierda** / **derecha** |
 | Silenciar una llamada entrante | cualquiera |
+
+**Brújula (navegación):** aparece sola al arrancar un viaje y con cada indicación nueva (suena un "ding-ding"). **OK** la esconde hasta la próxima indicación. Se va sola cuando terminás de navegar.
 
 Guarda las últimas 10. Los emojis no se muestran porque la fuente de la pantalla no los tiene.
 
@@ -71,6 +74,8 @@ Guarda las últimas 10. Los emojis no se muestran porque la fuente de la pantall
 3. En la lista de notificaciones de Chronos, activá las apps que quieras ver.
 
 Chronos no siempre le dice a la placa de qué app es cada notificación: si no la reconoce, la carta dice solo "CARTA".
+
+**Para la brújula:** en Chronos, entrá a la configuración de la app y activá **Navegación** (le pide permiso para leer las notificaciones de Google Maps). Después iniciá un viaje en Google Maps con el teléfono conectado: la pantalla muestra la flecha de Maps, o una brújula mientras espera la primera.
 
 ## Personalizar
 

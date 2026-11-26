@@ -87,3 +87,9 @@ SONG(SONG_LETTER_CLOSE, 35, {a6,1},{e6,1},{a5,2})
 SONG(SONG_CALL, 120,
   {d5,2},{a5,2},{g5,1},{f5,1},{e5,2},{r,1},{c5,1},{e5,1},{g5,3},{r,6})
 SONG(SONG_PAGE, 20, {g5,1},{c6,1})
+
+// ------------------------------ Brújula ------------------------------
+// Empieza el viaje
+SONG(SONG_NAV_START, 55, {c5,1},{g5,1},{c6,1},{r,1},{e6,1},{g6,3})
+// Nueva indicación: "ding-ding"
+SONG(SONG_NAV_TURN, 45, {e6,1},{r,1},{e6,1},{b6,3})

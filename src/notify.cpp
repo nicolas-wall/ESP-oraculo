@@ -1,6 +1,7 @@
 // Notificaciones del teléfono por Bluetooth (app Chronos en Android).
 // Cuando llega una, un hada mensajera trae una carta y se abre encima de
 // lo que estés haciendo. OK la cierra, izquierda/derecha recorren las últimas.
+// También muestra la navegación de Google Maps (la "brújula del héroe").
 
 #include <ChronosESP32.h>
 
@@ -78,6 +79,43 @@ void onRinger(String who, bool ringing) {
   callState = ringing ? 1 : 2;
   portEXIT_CRITICAL(&mux);
 }
+
+// ---------- Navegación (Google Maps -> Chronos) ----------
+const int ICON_BYTES = 48 * 48 / 8;  // flecha de 48x48, 1 bit por pixel
+struct NavText {
+  bool active, isNav;
+  char title[40], dir[140], dur[24], dist[24], eta[24];
+};
+NavText navRaw;
+uint8_t iconRaw[ICON_BYTES];
+volatile bool navDirty = false, iconDirty = false;
+
+void onConfig(Config c, uint32_t a, uint32_t b) {
+  if (c == CF_NAV_DATA) {
+    Navigation& n = watch.getNavigation();
+    portENTER_CRITICAL(&mux);
+    navRaw.active = n.active;
+    navRaw.isNav = n.isNavigation;
+    copyStr(navRaw.title, sizeof(navRaw.title), n.title);
+    copyStr(navRaw.dir, sizeof(navRaw.dir), n.directions);
+    copyStr(navRaw.dur, sizeof(navRaw.dur), n.duration);
+    copyStr(navRaw.dist, sizeof(navRaw.dist), n.distance);
+    copyStr(navRaw.eta, sizeof(navRaw.eta), n.eta);
+    navDirty = true;
+    portEXIT_CRITICAL(&mux);
+  } else if (c == CF_NAV_ICON && a == 2) {  // llegó la última parte de la flecha
+    portENTER_CRITICAL(&mux);
+    memcpy(iconRaw, watch.getNavigationIcon(), ICON_BYTES);
+    iconDirty = true;
+    portEXIT_CRITICAL(&mux);
+  }
+  (void)b;
+}
+
+NavText nav;  // ya limpio, para dibujar
+uint8_t navIcon[ICON_BYTES];
+bool navOn = false, navHidden = false, navHasIcon = false;
+uint32_t navChangedAt = 0;
 
 // Deja solo lo que la fuente de la pantalla puede dibujar: ASCII y Latin-1
 // (acentos, ñ, ¿¡). Emojis y otros símbolos se van; los espacios repetidos se juntan.
@@ -168,6 +206,7 @@ void pullInbox(uint32_t now) {
     }
     portEXIT_CRITICAL(&mux);
     if (!got) break;
+    if (navOn && strstr(r.app, "Maps")) continue;  // ya se ve en la brújula
 
     if (histCount < HIST) histCount++;
     for (int i = histCount - 1; i > 0; i--) hist[i] = hist[i - 1];
@@ -239,29 +278,139 @@ void drawFairy(int x, int y, uint32_t now) {
   drawSprite(x, y, (now / 90) % 2 ? SPR_FAIRY_A : SPR_FAIRY_B, 8);
 }
 
+void pullNav(uint32_t now) {
+  if (!navDirty && !iconDirty) return;
+  NavText r;
+  bool data = false, icon = false;
+  portENTER_CRITICAL(&mux);
+  if (navDirty) {
+    r = navRaw;
+    navDirty = false;
+    data = true;
+  }
+  if (iconDirty) {
+    memcpy(navIcon, iconRaw, ICON_BYTES);
+    iconDirty = false;
+    icon = true;
+  }
+  portEXIT_CRITICAL(&mux);
+  if (icon) navHasIcon = true;
+  if (!data) return;
+
+  if (!r.active) {
+    navOn = false;
+    navHasIcon = false;
+    return;
+  }
+  sanitize(r.title, nav.title, sizeof(nav.title));
+  sanitize(r.dur, nav.dur, sizeof(nav.dur));
+  sanitize(r.dist, nav.dist, sizeof(nav.dist));
+  sanitize(r.eta, nav.eta, sizeof(nav.eta));
+  char dir[sizeof(nav.dir)];
+  sanitize(r.dir, dir, sizeof(dir));
+  bool changed = strcmp(dir, nav.dir) != 0;
+  strcpy(nav.dir, dir);
+  nav.isNav = r.isNav;
+  if (!r.isNav) navHasIcon = false;
+
+  if (!navOn) {
+    navOn = true;
+    navHidden = false;
+    navChangedAt = now;
+    oracleWake(now);
+    if (nst == N_NONE) music.play(&SONG_NAV_START);
+  } else if (changed) {
+    // Nueva indicación: vuelve a aparecer aunque la hayas escondido
+    navHidden = false;
+    navChangedAt = now;
+    oracleWake(now);
+    if (nst == N_NONE) music.play(&SONG_NAV_TURN);
+  }
+}
+
+bool navVisible() { return navOn && !navHidden; }
+
+// Brújula que se dibuja cuando no hay flecha (antes de arrancar o sin ícono)
+void drawCompass(int cx, int cy, uint32_t now) {
+  u8g2.drawCircle(cx, cy, 21);
+  u8g2.drawCircle(cx, cy, 18);
+  u8g2.setFont(u8g2_font_4x6_tf);
+  u8g2.drawStr(cx - 1, cy - 11, "N");
+  float a = -1.5708f + 0.5f * sinf(now / 400.0f);
+  float c = cosf(a), s = sinf(a);
+  int nx = cx + (int)(13 * c), ny = cy + (int)(13 * s);
+  int sx = cx - (int)(9 * c), sy = cy - (int)(9 * s);
+  int px = (int)(-3 * s), py = (int)(3 * c);
+  u8g2.drawTriangle(nx, ny, cx + px, cy + py, cx - px, cy - py);
+  u8g2.drawLine(cx + px, cy + py, sx, sy);
+  u8g2.drawLine(cx - px, cy - py, sx, sy);
+  u8g2.drawDisc(cx, cy, 1);
+}
+
+void navDraw(uint32_t now) {
+  // Recuadro de la flecha, a la izquierda (titila con cada indicación nueva)
+  bool flash = now - navChangedAt < 900 && (now / 150) % 2;
+  u8g2.drawRFrame(0, 1, 52, 52, 4);
+  if (flash) u8g2.drawRFrame(1, 2, 50, 50, 3);
+  if (navHasIcon) u8g2.drawBitmap(2, 3, 6, 48, navIcon);
+  else drawCompass(26, 27, now);
+
+  // Distancia a la próxima indicación (o título)
+  const int X = 56, W = 128 - X - 1;
+  u8g2.setFont(u8g2_font_ncenB10_tf);
+  String t = fit(nav.title[0] ? nav.title : "Brújula", W);
+  u8g2.drawUTF8(X, 12, t.c_str());
+  u8g2.drawHLine(X, 15, W);
+
+  // Calle / instrucción, hasta 4 renglones
+  u8g2.setFont(u8g2_font_5x7_tf);
+  std::vector<String> lines = wrapText(nav.dir, W);
+  for (int i = 0; i < (int)lines.size() && i < 4; i++) {
+    String l = lines[i];
+    if (i == 3 && lines.size() > 4) l = fit((l + " " + lines[4]).c_str(), W);
+    u8g2.drawUTF8(X, 24 + i * 8, l.c_str());
+  }
+
+  // Pie: tiempo, distancia total y hora de llegada
+  char foot[100];
+  snprintf(foot, sizeof(foot), "%s%s%s%s%s", nav.dur, nav.dist[0] ? "  " : "", nav.dist,
+           nav.eta[0] ? "  llega " : "", nav.eta);
+  u8g2.setFont(u8g2_font_4x6_tf);
+  String f = fit(foot, 126);
+  u8g2.drawUTF8(1, 63, f.c_str());
+}
+
 }  // namespace
 
 void notifyBegin() {
   watch.setNotificationCallback(onNotification);
   watch.setConnectionCallback(onConnection);
   watch.setRingerCallback(onRinger);
+  watch.setConfigurationCallback(onConfig);
   watch.begin();
 }
 
-bool notifyActive() { return nst != N_NONE; }
+bool notifyActive() { return nst != N_NONE || navVisible(); }
 bool notifyConnected() { return connected; }
 
 // Devuelve true si la notificación se quedó con los botones este cuadro.
 bool notifyUpdate(uint32_t now) {
   watch.loop();
   pullInbox(now);
+  pullNav(now);
 
   bool ok = btnOk.shortRel, left = btnL.shortRel, right = btnR.shortRel;
   if (ok || left || right) lastInput = now;
 
   switch (nst) {
     case N_NONE:
-      return false;
+      if (!navVisible()) return false;
+      if (ok) {  // OK esconde la brújula hasta la próxima indicación
+        navHidden = true;
+        music.play(&SONG_LETTER_CLOSE);
+        oracleWake(now);
+      }
+      return true;
 
     case N_ARRIVE:
       if (now - nAt > ARRIVE_MS || ok) {
@@ -315,6 +464,7 @@ void notifyDraw(uint32_t now) {
   uint32_t st = now - nAt;
   switch (nst) {
     case N_NONE:
+      if (navVisible()) navDraw(now);
       break;
 
     case N_ARRIVE: {
